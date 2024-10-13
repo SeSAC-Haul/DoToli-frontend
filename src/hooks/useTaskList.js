@@ -72,7 +72,8 @@ const useTaskList = (baseUrl) => {
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
-    handleTaskToggle
+    handleTaskToggle,
+    fetchTasks
   };
 };
 
