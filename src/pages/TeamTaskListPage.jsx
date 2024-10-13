@@ -20,21 +20,23 @@ const TeamTaskListPage = () => {
     handleTaskEdit,
     handleTaskToggle,
     fetchTasks
-  } = useTaskList(`/team/${teamId}/tasks`);
+  } = useTaskList(`/teams/${teamId}/tasks`);
 
   useEffect(() => {
     const fetchTeamData = async () => {
       setIsLoading(true);
       try {
-        const teamResponse = await api.get(`/team/${teamId}`);
-        setTeamName(teamResponse.data.name);
-        await fetchTasks();
+        const teamResponse = await api.get(`/teams/${teamId}`);
+        setTeamName(teamResponse.data.teamName);
+        if (teamResponse.status === 200) {
+          await fetchTasks();
+        }
       } catch (err) {
-        console.error(err);
         if (err.response && err.response.status === 403) {
-          setError('이 팀에 접근할 권한이 없습니다.');
+          alert(err.response.data.message);
           navigate('/');
         } else {
+          console.log(err);
           setError('팀 정보를 불러오는 중 오류가 발생했습니다.');
         }
       } finally {
@@ -55,7 +57,7 @@ const TeamTaskListPage = () => {
 
   return (
       <TaskListPage
-          title={`${teamName} 할 일 목록`}
+          title={`${teamName} 팀 할 일 목록`}
           tasks={tasks}
           content={content}
           handleContentChange={handleContentChange}
