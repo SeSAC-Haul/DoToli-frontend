@@ -5,6 +5,7 @@ import SigninPage from "./pages/SigninPage.jsx";
 import PersonalTaskListPage from "./pages/PersonalTaskListPage.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import Mypage from "./pages/MyPage.jsx";
+import TeamTaskListPage from "./pages/TeamTaskListPage.jsx";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/signin" element={<SigninPage/>}/>
             <Route element={<PrivateRoute/>}>
               <Route path="/" element={<PersonalTaskListPage/>}/>
+              <Route path="/team/:teamId" element={<TeamTaskListPage/>}/>
               <Route path="/mypage" element={<Mypage/>}/>
             </Route>
             <Route path="*" element={<NotFound/>}/>
