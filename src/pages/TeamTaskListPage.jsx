@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import useTaskList from '../hooks/useTaskList';
 import TaskListPage from '../components/TaskListPage';
 import api from "../services/api.js";
 
 const TeamTaskListPage = () => {
   const { teamId } = useParams();
+  const navigate = useNavigate();
   const [teamName, setTeamName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const {
     tasks,
     content,
@@ -14,21 +18,40 @@ const TeamTaskListPage = () => {
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
-    handleTaskToggle
+    handleTaskToggle,
+    fetchTasks
   } = useTaskList(`/team/${teamId}/tasks`);
 
   useEffect(() => {
-    const fetchTeamName = async () => {
+    const fetchTeamData = async () => {
+      setIsLoading(true);
       try {
-        const response = await api.get(`/team/${teamId}`);
-        setTeamName(response.data.name);
+        const teamResponse = await api.get(`/team/${teamId}`);
+        setTeamName(teamResponse.data.name);
+        await fetchTasks();
       } catch (err) {
         console.error(err);
-        alert('팀 정보를 불러오는데 실패했습니다.');
+        if (err.response && err.response.status === 403) {
+          setError('이 팀에 접근할 권한이 없습니다.');
+          navigate('/');
+        } else {
+          setError('팀 정보를 불러오는 중 오류가 발생했습니다.');
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchTeamName();
-  }, [teamId]);
+
+    fetchTeamData();
+  }, [teamId, navigate, fetchTasks]);
+
+  if (isLoading) {
+    return <div>로딩 중...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
       <TaskListPage
