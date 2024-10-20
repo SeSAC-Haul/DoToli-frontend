@@ -5,13 +5,29 @@ const useTaskList = (baseUrl) => {
   const [tasks, setTasks] = useState([]);
   const [content, setContent] = useState('');
 
+  // 로딩 상태를 관리하기 위한 state 추가
+  const [isLoading, setIsLoading] = useState(true);
+
   const fetchTasks = useCallback(async () => {
+    // 로딩 상태 시작
+    setIsLoading(true);
     try {
       const response = await api.get(baseUrl);
-      setTasks(response.data);
+      console.log(response.data);
+
+      // 배열 확인
+      if (Array.isArray(response.data.content)) { // 응답 데이터에서 content 배열 추출
+        setTasks(response.data.content);
+      } else {
+        setTasks([]); // 배열이 아닌 경우 빈 배열로 설정하여 안전하게 유지
+      }
+
     } catch (err) {
       console.error(err);
       alert('할 일 목록을 불러오는데 실패했습니다.');
+    } finally {
+      // 로딩 상태 종료
+      setIsLoading(false);
     }
   }, [baseUrl]);
 
@@ -25,6 +41,7 @@ const useTaskList = (baseUrl) => {
 
   const handleAddTask = async (e) => {
     e.preventDefault();
+    console.log({ content, teamId: 1 });
     try {
       await api.post(baseUrl, { content });
       setContent('');
@@ -68,6 +85,7 @@ const useTaskList = (baseUrl) => {
   return {
     tasks,
     content,
+    isLoading, // 로딩 상태 반환
     handleContentChange,
     handleAddTask,
     handleTaskDelete,
