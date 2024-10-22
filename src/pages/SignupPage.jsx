@@ -9,6 +9,9 @@ const SignupPage = () => {
     password: '',
     nickname: ''
   });
+
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [emailVerificationSent] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -19,8 +22,32 @@ const SignupPage = () => {
     }));
   };
 
+  const handleEmailVerification = async () => {
+    try {
+      const response = await axios.get(
+          `http://localhost:8080/api/auth/verify-email?email=${formData.email}`
+      );
+      if (response.status === 200) {
+        alert('이메일 인증 요청이 발송되었습니다.');
+        setIsEmailVerified(true); // 이메일 인증 완료 시 true로 설정
+      }
+    } catch (err) {
+      console.log(err);
+      alert('이메일 인증 요청에 실패했습니다.');
+      setIsEmailVerified(false); // 인증 실패 시 false로 설정
+    }
+  };
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isEmailVerified) {
+      alert('이메일 인증을 완료해주세요.');
+      return;
+    }
+
     try {
       const response = await axios.post(
           'http://localhost:8080/api/auth/signup',
@@ -32,7 +59,7 @@ const SignupPage = () => {
       }
     } catch (err) {
       console.log(err);
-      alert('회원가입에 실패하였습니다.')
+      alert('회원가입에 실패하였습니다.');
     }
   };
 
@@ -51,16 +78,26 @@ const SignupPage = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   이메일
                 </label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="user@example.com"
-                    required
-                />
+                <div className="flex items-center">
+                  <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-2/3 mr-2"
+                      placeholder="user@example.com"
+                      required
+                  />
+                  <button
+                      type="button"
+                      onClick={handleEmailVerification}
+                      className={`w-1/3 bg-blue-600 text-white py-2 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${emailVerificationSent && 'opacity-50 cursor-not-allowed'}`}
+                      disabled={emailVerificationSent} // 이메일 발송 후 버튼 비활성화
+                  >
+                    {emailVerificationSent ? '인증 요청 발송됨' : '이메일 인증'}
+                  </button>
+                </div>
               </div>
               <div className="mb-3">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
