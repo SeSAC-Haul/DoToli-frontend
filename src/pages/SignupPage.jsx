@@ -11,7 +11,7 @@ const SignupPage = () => {
   });
 
   const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [emailVerificationSent] = useState(false);
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -30,6 +30,7 @@ const SignupPage = () => {
       if (response.status === 200) {
         alert('이메일 인증 요청이 발송되었습니다.');
         setIsEmailVerified(true); // 이메일 인증 완료 시 true로 설정
+        setEmailVerificationSent(true);
       }
     } catch (err) {
       console.log(err);
@@ -37,7 +38,6 @@ const SignupPage = () => {
       setIsEmailVerified(false); // 인증 실패 시 false로 설정
     }
   };
-
 
 
   const handleSubmit = async (e) => {
@@ -95,7 +95,7 @@ const SignupPage = () => {
                       className={`w-1/3 bg-blue-600 text-white py-2 px-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${emailVerificationSent && 'opacity-50 cursor-not-allowed'}`}
                       disabled={emailVerificationSent} // 이메일 발송 후 버튼 비활성화
                   >
-                    {emailVerificationSent ? '인증 요청 발송됨' : '이메일 인증'}
+                    {emailVerificationSent ? '인증 메일 전송' : '이메일 인증'}
                   </button>
                 </div>
               </div>
