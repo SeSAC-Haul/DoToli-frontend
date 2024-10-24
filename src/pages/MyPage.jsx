@@ -7,7 +7,7 @@ const MyPage = () => {
 
   const fetchData = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/tasks/mypage', {
+      const response = await axios.get('http://localhost:8080/api/mypage', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
