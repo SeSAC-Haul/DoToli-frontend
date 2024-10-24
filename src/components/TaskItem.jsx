@@ -1,76 +1,146 @@
 import React, { useState } from 'react';
 
-const TaskItem = ({ task, onTaskToggle, onTaskDelete, onTaskEdit }) => {
+const TaskItem = ({ task, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(task.content);
+  const [editedContent, setEditedContent] = useState(task.content);
+  const [editedDeadline, setEditedDeadline] = useState(task.deadline ? task.deadline.split('T')[0] : ''); // 마감일
+  const [editedTime, setEditedTime] = useState(task.deadline ? task.deadline.split('T')[1]?.substring(0, 5) : ''); // 마감시간
+  const [editedFlag, setEditedFlag] = useState(task.flag); // 플래그 상태
 
-  const handleEditStart = () => {
+  const handleEditClick = () => {
     setIsEditing(true);
-    setEditContent(task.content);
   };
 
-  const handleEditCancel = () => {
+  const handleCancelClick = () => {
     setIsEditing(false);
-    setEditContent(task.content);
+    setEditedContent(task.content);
+    setEditedDeadline(task.deadline ? task.deadline.split('T')[0] : '');
+    setEditedTime(task.deadline ? task.deadline.split('T')[1]?.substring(0, 5) : '');
+    setEditedFlag(task.flag);
   };
 
-  const handleEditSave = () => {
-    onTaskEdit(task.id, editContent);
+  const handleSaveClick = () => {
+    let finalDeadline = null;
+
+    if (editedDeadline && !editedTime) {
+      finalDeadline = `${editedDeadline}T23:59:00`;
+    } else if (!editedDeadline && editedTime) {
+      const today = new Date().toISOString().split('T')[0];
+      finalDeadline = `${today}T${editedTime}:00`;
+    } else if (editedDeadline && editedTime) {
+      finalDeadline = `${editedDeadline}T${editedTime}:00`;
+    }
+
+    const updatedTask = {
+      content: editedContent,
+      deadline: finalDeadline,
+      flag: editedFlag,
+    };
+
+    handleTaskEdit(task.id, updatedTask);
     setIsEditing(false);
   };
+
+  const formattedCreatedAt = new Date(task.createdAt).toLocaleDateString('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const calculateDday = (deadline) => {
+    if (!deadline) return null;
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    const diffTime = deadlineDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? `D-${diffDays}` : diffDays === 0 ? 'D-Day' : `D+${Math.abs(diffDays)}`;
+  };
+
+  const dDay = calculateDday(task.deadline);
 
   return (
-      <li className="flex items-center bg-white p-4 rounded-md shadow">
-        <input
-            type="checkbox"
-            checked={task.done}
-            onChange={() => onTaskToggle(task.id)}
-            className="mr-3 h-5 w-5 text-blue-500"
-        />
+      <li className="flex items-start justify-between p-4 border rounded-md mb-4">
         {isEditing ? (
-            <>
+            <div className="w-full">
               <input
                   type="text"
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="flex-grow mr-2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full p-2 mb-2 border border-gray-300 rounded-md"
               />
+              <input
+                  type="date"
+                  value={editedDeadline}
+                  onChange={(e) => setEditedDeadline(e.target.value)}
+                  className="w-full p-2 mb-2 border border-gray-300 rounded-md"
+              />
+              <input
+                  type="time"
+                  value={editedTime}
+                  onChange={(e) => setEditedTime(e.target.value)}
+                  className="w-full p-2 mb-2 border border-gray-300 rounded-md"
+              />
+              <div className="flex items-center mb-2">
+                <input
+                    type="checkbox"
+                    checked={editedFlag}
+                    onChange={(e) => setEditedFlag(e.target.checked)}
+                    className="mr-2"
+                />
+                <label>Flag 설정</label>
+              </div>
               <button
-                  onClick={handleEditSave}
-                  className="bg-green-500 text-white px-3 py-1 rounded-md mr-2 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  onClick={handleSaveClick}
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
               >
                 저장
               </button>
               <button
-                  onClick={handleEditCancel}
-                  className="bg-gray-300 text-gray-700 px-3 py-1 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  onClick={handleCancelClick}
+                  className="ml-2 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
               >
                 취소
               </button>
-            </>
+            </div>
         ) : (
             <>
-          <span
-              className={`flex-grow mr-2 ${task.done ? 'line-through text-gray-500' : 'text-gray-800'}`}
-          >
-            {task.content}
-          </span>
-              <button
-                  onClick={handleEditStart}
-                  className="bg-yellow-500 text-white px-3 py-1 rounded-md mr-2 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              >
-                수정
-              </button>
-              <button
-                  onClick={() => onTaskDelete(task.id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-              >
-                삭제
-              </button>
+            <div className="flex items-start flex-grow">
+              <div className="flex items-center">
+                {/* 체크박스 */}
+                <input
+                    type="checkbox"
+                    checked={task.done}
+                    onChange={() => onTaskToggle(task.id)}
+                    className="mr-4 transform scale-150"
+                />
+                {/* 할 일 내용 및 추가 정보 */}
+                <div className="flex flex-col">
+                  <span className="block text-lg font-medium">{task.content}</span>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <span>{task.flag ? '⚑' : ''}</span> {' '}
+                    <span>{dDay}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+              {/* 수정 및 삭제 버튼 */}
+              <div className="flex items-center ml-4">
+                <button
+                    onClick={handleEditClick}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600"
+                >
+                  수정
+                </button>
+                <button
+                    onClick={() => onTaskDelete(task.id)}
+                    className="ml-2 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+                >
+                  삭제
+                </button>
+              </div>
             </>
-        )}
-      </li>
-  );
-};
+            )}
+            </li>
+        );
+        };
 
-export default TaskItem;
+        export default TaskItem;

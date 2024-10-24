@@ -6,23 +6,39 @@ const PersonalTaskListPage = () => {
   const {
     tasks,
     content,
+    deadline,
+    time,
+    flag,
+    showDetails,
+    setDeadline,
+    setTime,
+    setFlag,
     handleContentChange,
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
-    handleTaskToggle
+    handleTaskToggle,
+    toggleDetails,
   } = useTaskList('/tasks');
 
   return (
       <TaskListPage
-          title="개인 할 일 목록"
+          title="나의 할 일 목록"
           tasks={tasks}
           content={content}
+          deadline={deadline}
+          time={time}
+          flag={flag}
+          showDetails={showDetails}
+          setDeadline={setDeadline}
+          setTime={setTime}
+          setFlag={setFlag}
           handleContentChange={handleContentChange}
           handleAddTask={handleAddTask}
           handleTaskToggle={handleTaskToggle}
           handleTaskDelete={handleTaskDelete}
           handleTaskEdit={handleTaskEdit}
+          toggleDetails={toggleDetails}
       />
   );
 };
