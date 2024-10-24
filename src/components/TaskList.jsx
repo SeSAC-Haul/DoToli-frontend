@@ -1,7 +1,8 @@
 import React from 'react';
 import TaskItem from "./TaskItem.jsx";
 
-const TaskList = ({ tasks, onTaskToggle, onTaskDelete, onTaskEdit }) => {
+const TaskList = ({ tasks, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
+
   return (
       <ul className="space-y-3">
         {tasks.map(task => (
@@ -10,7 +11,7 @@ const TaskList = ({ tasks, onTaskToggle, onTaskDelete, onTaskEdit }) => {
                 task={task}
                 onTaskToggle={onTaskToggle}
                 onTaskDelete={onTaskDelete}
-                onTaskEdit={onTaskEdit}
+                handleTaskEdit={handleTaskEdit}
             />
         ))}
       </ul>
