@@ -1,13 +1,16 @@
 import React from "react";
-import { acceptInvitation, rejectInvitation } from "../services/api"; // 새로운 api 파일에서 호출
+import { acceptInvitation, rejectInvitation } from "../services/api";
+import { useTeam } from '../context/TeamContext';
 
 const InvitationItem = ({ invitation, onRemove }) => {
+  const { refreshTeams } = useTeam();
 
   const handleAccept = async () => {
     try {
       await acceptInvitation(invitation.teamId, invitation.id);
       alert("초대를 수락했습니다.");
       onRemove(invitation.id);
+      refreshTeams();
     } catch (err) {
       console.error(err);
       alert("초대를 수락하는 데 실패했습니다.");
