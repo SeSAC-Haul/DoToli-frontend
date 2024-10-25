@@ -1,20 +1,11 @@
 import React from "react";
-import axios from "axios";
+import { acceptInvitation, rejectInvitation } from "../services/api"; // 새로운 api 파일에서 호출
 
 const InvitationItem = ({ invitation, onRemove }) => {
-  const token = localStorage.getItem('token');
 
   const handleAccept = async () => {
     try {
-      await axios.post(
-          `http://localhost:8080/api/teams/${invitation.teamId}/invitations/${invitation.id}/accept`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      await acceptInvitation(invitation.teamId, invitation.id);
       alert("초대를 수락했습니다.");
       onRemove(invitation.id);
     } catch (err) {
@@ -25,15 +16,7 @@ const InvitationItem = ({ invitation, onRemove }) => {
 
   const handleReject = async () => {
     try {
-      await axios.post(
-          `http://localhost:8080/api/teams/${invitation.teamId}/invitations/${invitation.id}/reject`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-      );
+      await rejectInvitation(invitation.teamId, invitation.id);
       alert("초대를 거절했습니다.");
       onRemove(invitation.id);
     } catch (err) {
@@ -41,6 +24,7 @@ const InvitationItem = ({ invitation, onRemove }) => {
       alert("초대를 거절하는 데 실패했습니다.");
     }
   };
+
   return (
       <div className="p-4 border-b border-gray-300">
         <div className="flex justify-between items-center space-x-4">
