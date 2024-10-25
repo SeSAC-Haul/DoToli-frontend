@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 import InvitationItem from "../components/InvitationItem";
 
 const MyPage = () => {
   const [userData, setUserData] = useState(null);
-  const token = localStorage.getItem("token");
 
   const fetchData = async () => {
     try {
-      const response = await axios.get("http://localhost:8080/api/mypage", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get("/mypage");
       setUserData(response.data);
     } catch (err) {
       console.log(err);
@@ -33,12 +28,8 @@ const MyPage = () => {
 
   const handleAcceptInvitation = async (invitationId) => {
     try {
-      await axios.post(`http://localhost:8080/api/invitations/accept/${invitationId}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      fetchData(); // 팀 목록을 업데이트하기 위해 재요청
+      await api.post(`/invitations/accept/${invitationId}`);
+      fetchData();
     } catch (error) {
       console.error("초대 수락에 실패했습니다.", error);
     }
@@ -77,9 +68,8 @@ const MyPage = () => {
                 <p className="text-lg mt-2">My Completed DoToli</p>
               </div>
             </div>
-
-
           </div>
+
           <div className="bg-gray-100 rounded-lg p-8 mt-16">
             <h2 className="text-lg font-semibold mb-4">Invitations</h2>
             <div className="border-t border-gray-300 w-full my-4 mb-10"></div>
