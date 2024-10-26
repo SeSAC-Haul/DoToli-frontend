@@ -2,13 +2,23 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import api from '../services/api.js';
 
 const useTaskList = (baseUrl, teamId = null) => {
+  // Basic states
   const [tasks, setTasks] = useState([]);
   const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Pagination states
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [currentFilters, setCurrentFilters] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const previousFiltersRef = useRef();
+  const isInitialMount = useRef(true);
+  const timeoutRef = useRef(null);
+
+  // Detail option states
+  const [showDetails, setShowDetails] = useState(false);
+  const [deadline, setDeadline] = useState('');
+  const [time, setTime] = useState('');
+  const [flag, setFlag] = useState(false);
 
   const fetchTasks = useCallback(async (currentPage = 0) => {
     try {
@@ -32,15 +42,22 @@ const useTaskList = (baseUrl, teamId = null) => {
   }, [teamId]);
 
   const fetchFilteredTasks = useCallback(async (filters, currentPage = 0) => {
+    if (!filters) return;
+
     try {
       setIsLoading(true);
       const filterUrl = teamId ? `/teams/${teamId}/tasks/filter` : '/tasks/filter';
+
       const cleanedFilters = Object.entries(filters).reduce((acc, [key, value]) => {
         if (value !== null && value !== undefined && value !== '' && value !== false) {
           acc[key] = value;
         }
         return acc;
       }, {});
+
+      if (Object.keys(cleanedFilters).length === 0) {
+        return fetchTasks(currentPage);
+      }
 
       if (cleanedFilters.keyword?.trim()) {
         cleanedFilters.keyword = cleanedFilters.keyword.trim();
@@ -56,7 +73,6 @@ const useTaskList = (baseUrl, teamId = null) => {
 
       setTasks(response.data.content || []);
       setTotalPages(response.data.totalPages);
-      setCurrentFilters(cleanedFilters);
       return response.data;
     } catch (err) {
       console.error('Error fetching filtered tasks:', err);
@@ -64,20 +80,48 @@ const useTaskList = (baseUrl, teamId = null) => {
     } finally {
       setIsLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, fetchTasks]);
 
   useEffect(() => {
-    const filtersChanged = JSON.stringify(currentFilters) !== JSON.stringify(previousFiltersRef.current);
-    previousFiltersRef.current = currentFilters;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchTasks(page);
+      return;
+    }
 
-    if (filtersChanged || page !== undefined) {
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set new timeout
+    timeoutRef.current = setTimeout(() => {
       if (currentFilters) {
         fetchFilteredTasks(currentFilters, page);
       } else {
         fetchTasks(page);
       }
+    }, 300);
+
+    // Cleanup function
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [page, fetchTasks, fetchFilteredTasks, currentFilters]);
+
+  const getFinalDeadline = () => {
+    if (deadline && !time) {
+      return `${deadline}T23:59:00`;
+    } else if (!deadline && time) {
+      const today = new Date().toISOString().split('T')[0];
+      return `${today}T${time}:00`;
+    } else if (deadline && time) {
+      return `${deadline}T${time}:00`;
     }
-  }, [page, fetchTasks, fetchFilteredTasks]);
+    return null;
+  };
 
   const handleAddTask = async (e) => {
     e.preventDefault();
@@ -88,11 +132,18 @@ const useTaskList = (baseUrl, teamId = null) => {
       const url = teamId ? `/teams/${teamId}/tasks` : '/tasks';
       await api.post(url, {
         content: content,
-        flag: false,
-        deadline: null
+        flag: flag,
+        deadline: getFinalDeadline()
       });
-      setContent('');
 
+      // Reset form
+      setContent('');
+      setDeadline('');
+      setTime('');
+      setFlag(false);
+      setShowDetails(false);
+
+      // Refresh tasks
       if (currentFilters) {
         await fetchFilteredTasks(currentFilters, page);
       } else {
@@ -124,17 +175,11 @@ const useTaskList = (baseUrl, teamId = null) => {
     }
   };
 
-  const handleTaskEdit = async (taskId, newContent) => {
-    if (!newContent.trim()) return;
+  const handleTaskEdit = async (taskId, updatedTask) => {
     try {
       setIsLoading(true);
       const url = teamId ? `/teams/${teamId}/tasks/${taskId}` : `/tasks/${taskId}`;
-      const task = tasks.find(t => t.id === taskId);
-      await api.put(url, {
-        content: newContent,
-        flag: task?.flag || false,
-        deadline: task?.deadline || null
-      });
+      await api.put(url, updatedTask);
 
       if (currentFilters) {
         await fetchFilteredTasks(currentFilters, page);
@@ -176,22 +221,43 @@ const useTaskList = (baseUrl, teamId = null) => {
     await fetchTasks(0);
   }, [fetchTasks]);
 
+  const toggleDetails = () => {
+    setShowDetails(prev => !prev);
+  };
+
   return {
+    // Data
     tasks,
     content,
     totalPages,
     page,
     currentFilters,
     isLoading,
+    deadline,
+    time,
+    flag,
+    showDetails,
+
+    // Handlers
     handleContentChange: (e) => setContent(e.target.value),
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
     handleTaskToggle,
-    fetchFilteredTasks,
+    fetchFilteredTasks: async (filters, currentPage) => {
+      setCurrentFilters(filters);
+      await fetchFilteredTasks(filters, currentPage);
+    },
     resetFilters,
+    toggleDetails,
+
+    // Setters
     setPage,
-    setCurrentFilters
+    setCurrentFilters,
+    setDeadline,
+    setTime,
+    setFlag,
+    setShowDetails
   };
 };
 

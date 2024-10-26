@@ -18,6 +18,10 @@ const TeamTaskListPage = () => {
     content,
     totalPages,
     page,
+    deadline,
+    time,
+    flag,
+    showDetails,
     handleContentChange,
     handleAddTask,
     handleTaskDelete,
@@ -26,6 +30,10 @@ const TeamTaskListPage = () => {
     fetchFilteredTasks,
     resetFilters,
     setPage,
+    setDeadline,
+    setTime,
+    setFlag,
+    setShowDetails,
     currentFilters
   } = useTaskList(`/teams/${teamId}/tasks`, teamId);
 
@@ -62,7 +70,7 @@ const TeamTaskListPage = () => {
           alert(err.response.data.message);
           navigate('/');
         } else {
-          console.log(err);
+          console.error('Team data fetch error:', err);
           setError('팀 정보를 불러오는 중 오류가 발생했습니다.');
         }
       } finally {
@@ -72,12 +80,6 @@ const TeamTaskListPage = () => {
 
     fetchTeamData();
   }, [teamId, navigate]);
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-    </div>;
-  }
 
   if (error) {
     return <div className="text-center text-red-600 mt-8">{error}</div>;
@@ -99,6 +101,15 @@ const TeamTaskListPage = () => {
             isFiltered={isFiltered}
             isLoading={isLoading}
             teamId={teamId}
+            // 추가된 props
+            deadline={deadline}
+            time={time}
+            flag={flag}
+            setDeadline={setDeadline}
+            setTime={setTime}
+            setFlag={setFlag}
+            showDetails={showDetails}
+            toggleDetails={setShowDetails}
         />
         {tasks.length > 0 && (
             <Pagination

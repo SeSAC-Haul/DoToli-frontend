@@ -5,10 +5,19 @@ import Pagination from '../components/Pagination';
 
 const PersonalTaskListPage = () => {
   const {
+    // Data states
     tasks,
     content,
     totalPages,
     page,
+    currentFilters,
+    isLoading,
+    deadline,
+    time,
+    flag,
+    showDetails,
+
+    // Event handlers
     handleContentChange,
     handleAddTask,
     handleTaskDelete,
@@ -16,8 +25,13 @@ const PersonalTaskListPage = () => {
     handleTaskToggle,
     fetchFilteredTasks,
     resetFilters,
+    toggleDetails,
+
+    // Setters
     setPage,
-    currentFilters
+    setDeadline,
+    setTime,
+    setFlag
   } = useTaskList('/tasks');
 
   const [isFiltered, setIsFiltered] = useState(false);
@@ -45,9 +59,13 @@ const PersonalTaskListPage = () => {
   return (
       <div>
         <TaskListPage
+            // Basic props
             title="개인 할 일 목록"
             tasks={tasks}
             content={content}
+            isLoading={isLoading}
+
+            // Event handlers
             handleContentChange={handleContentChange}
             handleAddTask={handleAddTask}
             handleTaskToggle={handleTaskToggle}
@@ -55,8 +73,21 @@ const PersonalTaskListPage = () => {
             handleTaskEdit={handleTaskEdit}
             handleFilterApply={handleFilterApply}
             handleResetFilters={handleResetFilters}
+
+            // Filter states
             isFiltered={isFiltered}
+
+            // Detail option props
+            deadline={deadline}
+            time={time}
+            flag={flag}
+            showDetails={showDetails}
+            setDeadline={setDeadline}
+            setTime={setTime}
+            setFlag={setFlag}
+            toggleDetails={toggleDetails}
         />
+
         {tasks.length > 0 && (
             <Pagination
                 currentPage={page + 1}

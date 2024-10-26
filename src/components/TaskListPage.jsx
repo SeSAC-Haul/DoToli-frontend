@@ -1,6 +1,6 @@
 import React from 'react';
 import useTaskFilter from '../hooks/useTaskFilter';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, PlusCircle } from 'lucide-react';
 import TaskList from "./TaskList.jsx";
 import FilterModal from '../pages/FilterModal.jsx';
 
@@ -84,13 +84,21 @@ const TaskListPage = ({
                         handleAddTask,
                         handleTaskToggle,
                         handleTaskDelete,
-                        handleTaskEdit,
+                        handleTaskEdit,  // props에 handleTaskEdit 추가
                         handleFilterApply,
                         handleResetFilters,
                         isFiltered,
                         isLoading,
                         teamId,
-                        children
+                        children,
+                        deadline,
+                        time,
+                        flag,
+                        setDeadline,
+                        setTime,
+                        setFlag,
+                        showDetails,
+                        toggleDetails,
                       }) => {
   const {
     filterOptions,
@@ -208,13 +216,63 @@ const TaskListPage = ({
                 >
                   추가
                 </button>
+                <button
+                    type="button"
+                    onClick={toggleDetails}
+                    className="ml-2 relative bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-500 focus:ring-2 focus:ring-blue-500 flex items-center"
+                >
+                  <PlusCircle
+                      className="w-6 h-6 transition-transform duration-300 ease-in-out transform rotate-0 hover:rotate-90"
+                  />
+                </button>
               </div>
+
+              {/* 상세 옵션 폼 */}
+              {showDetails && (
+                  <div className="mt-4 p-4 border border-gray-300 rounded-md">
+                    <div className="mb-2">
+                      <label htmlFor="deadline" className="block text-sm font-medium text-gray-700">
+                        마감일 설정
+                      </label>
+                      <input
+                          type="date"
+                          id="deadline"
+                          value={deadline}
+                          onChange={(e) => setDeadline(e.target.value)}
+                          className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="mb-2">
+                      <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+                        마감 시간 설정
+                      </label>
+                      <input
+                          type="time"
+                          id="time"
+                          value={time}
+                          onChange={(e) => setTime(e.target.value)}
+                          className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                          type="checkbox"
+                          id="flag"
+                          checked={flag}
+                          onChange={(e) => setFlag(e.target.checked)}
+                          className="mr-2"
+                      />
+                      <label htmlFor="flag" className="text-sm font-medium text-gray-700">
+                        Flag 설정
+                      </label>
+                    </div>
+                  </div>
+              )}
             </form>
 
             {isLoading ? (
                 <div className="text-center py-8">
-                  <div
-                      className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
                 </div>
             ) : tasks.length === 0 ? (
                 <div className="text-center py-8 text-gray-600">

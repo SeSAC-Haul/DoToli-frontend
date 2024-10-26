@@ -1,9 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import TaskItem from "./TaskItem.jsx";
 
 const TaskList = ({ tasks, onTaskToggle, onTaskDelete, onTaskEdit }) => {
-  useEffect(() => {
-  }, [tasks]);
   return (
       <ul className="space-y-3">
         {tasks.map(task => (
