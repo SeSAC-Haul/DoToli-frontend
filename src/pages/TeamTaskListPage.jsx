@@ -33,7 +33,7 @@ const TeamTaskListPage = () => {
     setDeadline,
     setTime,
     setFlag,
-    setShowDetails,
+    toggleDetails,
     currentFilters
   } = useTaskList(`/teams/${teamId}/tasks`, teamId);
 
@@ -109,7 +109,7 @@ const TeamTaskListPage = () => {
             setTime={setTime}
             setFlag={setFlag}
             showDetails={showDetails}
-            toggleDetails={setShowDetails}
+            toggleDetails={toggleDetails}
         />
         {tasks.length > 0 && (
             <Pagination
