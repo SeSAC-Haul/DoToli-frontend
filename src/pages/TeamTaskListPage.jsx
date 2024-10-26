@@ -11,35 +11,51 @@ const TeamTaskListPage = () => {
   const [teamName, setTeamName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [isFiltered, setIsFiltered] = useState(false);
 
   const {
-    tasks = [],
+    tasks,
     content,
+    totalPages,
+    page,
     handleContentChange,
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
     handleTaskToggle,
-    fetchTasks,
-    setPage: setTaskPage,
+    fetchFilteredTasks,
+    resetFilters,
+    setPage,
+    currentFilters
   } = useTaskList(`/teams/${teamId}/tasks`, teamId);
 
-  useEffect(() => {
-    console.log("Tasks:", tasks);
-  }, [tasks]);
+  const handleFilterApply = async (filters) => {
+    setIsFiltered(true);
+    setPage(0);
+    await fetchFilteredTasks(filters, 0);
+  };
+
+  const handleResetFilters = async () => {
+    setIsFiltered(false);
+    setPage(0);
+    await resetFilters();
+  };
+
+  const handlePageChange = (newPage) => {
+    const pageIndex = newPage - 1;
+    setPage(pageIndex);
+    if (isFiltered && currentFilters) {
+      fetchFilteredTasks(currentFilters, pageIndex);
+    }
+  };
 
   useEffect(() => {
     const fetchTeamData = async () => {
       setIsLoading(true);
       try {
         const teamResponse = await api.get(`/teams/${teamId}`);
-        setTeamName(teamResponse.data.teamName);
         if (teamResponse.status === 200) {
-          await fetchTasks();
-          const response = await api.get(`/teams/${teamId}/tasks?page=${page}`);
-          setTotalPages(response.data.totalPages);
+          setTeamName(teamResponse.data.teamName);
         }
       } catch (err) {
         if (err.response && err.response.status === 403) {
@@ -55,46 +71,48 @@ const TeamTaskListPage = () => {
     };
 
     fetchTeamData();
-  }, [teamId, navigate, fetchTasks, page]);
+  }, [teamId, navigate]);
 
   if (isLoading) {
-    return <div>로딩 중...</div>;
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+    </div>;
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return <div className="text-center text-red-600 mt-8">{error}</div>;
   }
-
-  const handleFirstPage = () => setPage(0);
-  const handleLastPage = () => setPage(totalPages - 1);
-  const handleNextPage = () => setPage((prevPage) => Math.min(prevPage + 1, totalPages - 1));
-  const handlePreviousPage = () => setPage((prevPage) => Math.max(prevPage - 1, 0));
-  const handlePageChange = (pageNumber) => setPage(pageNumber - 1);
 
   return (
       <div>
         <TaskListPage
             title={`${teamName} 팀 할 일 목록`}
-            tasks={Array.isArray(tasks.content) ? tasks.content : []}
+            tasks={tasks}
             content={content}
             handleContentChange={handleContentChange}
             handleAddTask={handleAddTask}
             handleTaskToggle={handleTaskToggle}
             handleTaskDelete={handleTaskDelete}
             handleTaskEdit={handleTaskEdit}
+            handleFilterApply={handleFilterApply}
+            handleResetFilters={handleResetFilters}
+            isFiltered={isFiltered}
+            isLoading={isLoading}
+            teamId={teamId}
         />
-        <Pagination
-            currentPage={page + 1}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            onFirstPage={handleFirstPage}
-            onLastPage={handleLastPage}
-            onNextPage={handleNextPage}
-            onPreviousPage={handlePreviousPage}
-        />
+        {tasks.length > 0 && (
+            <Pagination
+                currentPage={page + 1}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                onFirstPage={() => handlePageChange(1)}
+                onLastPage={() => handlePageChange(totalPages)}
+                onNextPage={() => handlePageChange(Math.min(page + 2, totalPages))}
+                onPreviousPage={() => handlePageChange(Math.max(page, 1))}
+            />
+        )}
       </div>
   );
 };
-
 
 export default TeamTaskListPage;
