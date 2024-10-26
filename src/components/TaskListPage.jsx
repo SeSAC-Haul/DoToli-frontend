@@ -190,11 +190,6 @@ const TaskListPage = ({
           <div className="bg-white rounded-lg shadow-md p-6 mb-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-3xl font-bold text-gray-800">{title}</h2>
-              {(isFiltered || appliedFilters || keyword) && (
-                  <span className="text-sm text-blue-600">
-                {keyword ? '검색 결과' : '필터가 적용되었습니다'}
-              </span>
-              )}
             </div>
 
             <form onSubmit={handleAddTask} className="mb-6">
