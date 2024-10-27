@@ -16,5 +16,4 @@ const TaskList = ({ tasks, onTaskToggle, onTaskDelete, onTaskEdit }) => {
       </ul>
   );
 };
-
 export default TaskList;
