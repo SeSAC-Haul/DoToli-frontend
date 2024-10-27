@@ -7,10 +7,11 @@ import PrivateRoute from "./components/PrivateRoute.jsx";
 import Mypage from "./pages/MyPage.jsx";
 import TeamTaskListPage from "./pages/TeamTaskListPage.jsx";
 import EmailVerifiedPage from './pages/EmailVerifiedPage.jsx';
+import { TeamProvider } from './context/TeamContext';
 
 function App() {
   return (
-      <>
+      <TeamProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/signup" element={<SignupPage/>}/>
@@ -24,7 +25,7 @@ function App() {
             <Route path="*" element={<NotFound/>}/>
           </Routes>
         </BrowserRouter>
-      </>
+      </TeamProvider>
   )
 }
 

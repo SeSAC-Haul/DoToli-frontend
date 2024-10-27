@@ -1,26 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Leaf, PlusCircle, User, Users, X } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import api from "../../services/api.js";
+import { useTeam } from '../../context/TeamContext.jsx';
 
 const Sidebar = () => {
-  const navigate = useNavigate();
-  const [teams, setTeams] = useState([]);
+  const { teams, refreshTeams } = useTeam();
   const [newTeamName, setNewTeamName] = useState("");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
-
-  const fetchTeams = async () => {
-    try {
-      const response = await api.get("/teams");
-      if (response.status === 200) setTeams(response.data);
-    } catch (error) {
-      console.error("팀 목록을 불러오는데 실패했습니다.", error);
-    }
-  };
+    refreshTeams();
+  }, [refreshTeams]);
 
   const createNewTeam = async (e) => {
     e.preventDefault();
@@ -30,7 +21,7 @@ const Sidebar = () => {
       if (response.status === 200) {
         setNewTeamName("");
         setIsCreatingTeam(false);
-        fetchTeams();
+        refreshTeams();
       }
     } catch (error) {
       console.error("새 팀 생성에 실패했습니다.", error);
