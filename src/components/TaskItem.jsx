@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const TaskItem = ({ task, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
+const TaskItem = ({ task, onTaskToggle, onTaskDelete, onTaskEdit }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(task.content);
   const [editedDeadline, setEditedDeadline] = useState(task.deadline ? task.deadline.split('T')[0] : ''); // 마감일
@@ -37,7 +37,7 @@ const TaskItem = ({ task, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
       flag: editedFlag,
     };
 
-    handleTaskEdit(task.id, updatedTask);
+    onTaskEdit(task.id, updatedTask);
     setIsEditing(false);
   };
 
@@ -95,7 +95,7 @@ const TaskItem = ({ task, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
                 저장
               </button>
               <button
-                  onClick={handleCancelClick}
+                  onClick={() => setIsEditing(false)}
                   className="ml-2 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
               >
                 취소
@@ -103,25 +103,25 @@ const TaskItem = ({ task, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
             </div>
         ) : (
             <>
-            <div className="flex items-start flex-grow">
-              <div className="flex items-center">
-                {/* 체크박스 */}
-                <input
-                    type="checkbox"
-                    checked={task.done}
-                    onChange={() => onTaskToggle(task.id)}
-                    className="mr-4 transform scale-150"
-                />
-                {/* 할 일 내용 및 추가 정보 */}
-                <div className="flex flex-col">
-                  <span className="block text-lg font-medium">{task.content}</span>
-                  <div className="text-sm text-gray-600 mt-1">
-                    <span>{task.flag ? '⚑' : ''}</span> {' '}
-                    <span>{dDay}</span>
+              <div className="flex items-start flex-grow">
+                <div className="flex items-center">
+                  {/* 체크박스 */}
+                  <input
+                      type="checkbox"
+                      checked={task.done}
+                      onChange={() => onTaskToggle(task.id)}
+                      className="mr-4 transform scale-150"
+                  />
+                  {/* 할 일 내용 및 추가 정보 */}
+                  <div className="flex flex-col">
+                    <span className="block text-lg font-medium">{task.content}</span>
+                    <div className="text-sm text-gray-600 mt-1">
+                      <span>{task.flag ? '⚑' : ''}</span> {' '}
+                      <span>{dDay}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
               {/* 수정 및 삭제 버튼 */}
               <div className="flex items-center ml-4">
                 <button
@@ -138,9 +138,9 @@ const TaskItem = ({ task, onTaskToggle, onTaskDelete, handleTaskEdit }) => {
                 </button>
               </div>
             </>
-            )}
-            </li>
-        );
-        };
+        )}
+      </li>
+  );
+};
 
-        export default TaskItem;
+export default TaskItem;

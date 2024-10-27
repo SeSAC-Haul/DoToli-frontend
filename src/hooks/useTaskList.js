@@ -1,154 +1,263 @@
-import { useCallback, useEffect, useState } from 'react';
-import api from "../services/api.js";
+import { useCallback, useEffect, useState, useRef } from 'react';
+import api from '../services/api.js';
 
-const useTaskList = (baseUrl) => {
+const useTaskList = (baseUrl, teamId = null) => {
+  // Basic states
   const [tasks, setTasks] = useState([]);
   const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 상세옵션 상태 관리
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentFilters, setCurrentFilters] = useState(null);
+  const isInitialMount = useRef(true);
+  const timeoutRef = useRef(null);
+
+  // Detail option states
   const [showDetails, setShowDetails] = useState(false);
   const [deadline, setDeadline] = useState('');
   const [time, setTime] = useState('');
   const [flag, setFlag] = useState(false);
 
-  // 로딩 상태를 관리하기 위한 state 추가
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchTasks = useCallback(async () => {
-    // 로딩 상태 시작
-    setIsLoading(true);
+  const fetchTasks = useCallback(async (currentPage = 0) => {
     try {
-      const response = await api.get(baseUrl);
-      console.log(response.data);
-
-      // 배열 확인
-      if (Array.isArray(response.data.content)) { // 응답 데이터에서 content 배열 추출
-        setTasks(response.data.content);
-      } else {
-        setTasks([]); // 배열이 아닌 경우 빈 배열로 설정하여 안전하게 유지
-      }
-
+      setIsLoading(true);
+      const url = teamId ? `/teams/${teamId}/tasks` : '/tasks';
+      const response = await api.get(url, {
+        params: {
+          page: currentPage,
+          size: 5
+        }
+      });
+      setTasks(response.data.content || []);
+      setTotalPages(response.data.totalPages);
+      return response.data;
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching tasks:', err);
       alert('할 일 목록을 불러오는데 실패했습니다.');
     } finally {
-      // 로딩 상태 종료
       setIsLoading(false);
     }
-  }, [baseUrl]);
+  }, [teamId]);
+
+  const fetchFilteredTasks = useCallback(async (filters, currentPage = 0) => {
+    if (!filters) return;
+
+    try {
+      setIsLoading(true);
+      const filterUrl = teamId ? `/teams/${teamId}/tasks/filter` : '/tasks/filter';
+
+      const cleanedFilters = Object.entries(filters).reduce((acc, [key, value]) => {
+        if (value !== null && value !== undefined && value !== '' && value !== false) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {});
+
+      if (Object.keys(cleanedFilters).length === 0) {
+        return fetchTasks(currentPage);
+      }
+
+      if (cleanedFilters.keyword?.trim()) {
+        cleanedFilters.keyword = cleanedFilters.keyword.trim();
+      }
+
+      const response = await api.get(filterUrl, {
+        params: {
+          ...cleanedFilters,
+          page: currentPage,
+          size: 5
+        }
+      });
+
+      setTasks(response.data.content || []);
+      setTotalPages(response.data.totalPages);
+      return response.data;
+    } catch (err) {
+      console.error('Error fetching filtered tasks:', err);
+      alert('필터링된 할 일 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [teamId, fetchTasks]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchTasks(page);
+      return;
+    }
 
-  const handleContentChange = (e) => {
-    setContent(e.target.value);
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set new timeout
+    timeoutRef.current = setTimeout(() => {
+      if (currentFilters) {
+        fetchFilteredTasks(currentFilters, page);
+      } else {
+        fetchTasks(page);
+      }
+    }, 300);
+
+    // Cleanup function
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [page, fetchTasks, fetchFilteredTasks, currentFilters]);
+
+  const getFinalDeadline = () => {
+    if (deadline && !time) {
+      return `${deadline}T23:59:00`;
+    } else if (!deadline && time) {
+      const today = new Date().toISOString().split('T')[0];
+      return `${today}T${time}:00`;
+    } else if (deadline && time) {
+      return `${deadline}T${time}:00`;
+    }
+    return null;
   };
 
   const handleAddTask = async (e) => {
     e.preventDefault();
-
-    let finalDeadline = null;
-
-    // 마감일과 마감시간을 병합하여 LocalDateTime 형태로 생성
-    if (deadline && !time) {
-      // 마감일만 선택된 경우, 시간을 23:59로 설정
-      finalDeadline = `${deadline}T23:59:00`;
-    } else if (!deadline && time) {
-      // 마감시간만 선택된 경우, 현재 날짜를 마감일로 설정
-      const today = new Date().toISOString().split('T')[0];
-      finalDeadline = `${today}T${time}:00`;
-    } else if (deadline && time) {
-      // 마감일과 마감시간 모두 선택된 경우
-      finalDeadline = `${deadline}T${time}:00`;
-    }
-
-    // 모든 값이 선택되지 않은 경우 -> 기본 마감일 및 마감시간 설정
-    if (!deadline && !time) {
-      // 아무 것도 설정되지 않은 경우에는 그냥 null로 유지해도 무방합니다.
-      finalDeadline = null;
-    }
-
-    // 최종 데이터 구성
-    const data = {
-      content,
-      deadline: finalDeadline, // 마감일과 마감시간이 설정되지 않았다면 null로 유지됨
-      flag: flag || false, // 플래그를 설정하지 않았다면 기본값 false
-    };
-
-    console.log("Sending data to backend:", data); // 데이터 확인용 콘솔 출력
+    if (!content.trim()) return;
 
     try {
-      await api.post(baseUrl, data);
+      setIsLoading(true);
+      const url = teamId ? `/teams/${teamId}/tasks` : '/tasks';
+      await api.post(url, {
+        content: content,
+        flag: flag,
+        deadline: getFinalDeadline()
+      });
+
+      // Reset form
       setContent('');
       setDeadline('');
       setTime('');
       setFlag(false);
-      fetchTasks();
-    } catch (err) {
-      console.error(err);
-      alert('할 일 추가에 실패했습니다.');
-    }
-  };
+      setShowDetails(false);
 
-  // 상세 옵션 폼 표시/숨기기
-  const toggleDetails = () => {
-    setShowDetails((prev) => !prev);
+      // Refresh tasks
+      if (currentFilters) {
+        await fetchFilteredTasks(currentFilters, page);
+      } else {
+        await fetchTasks(page);
+      }
+    } catch (err) {
+      console.error('Error adding task:', err);
+      alert('할 일 추가에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleTaskDelete = async (taskId) => {
     try {
-      await api.delete(`${baseUrl}/${taskId}`);
-      fetchTasks();
+      setIsLoading(true);
+      const url = teamId ? `/teams/${teamId}/tasks/${taskId}` : `/tasks/${taskId}`;
+      await api.delete(url);
+      if (currentFilters) {
+        await fetchFilteredTasks(currentFilters, page);
+      } else {
+        await fetchTasks(page);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error deleting task:', err);
       alert('할 일 삭제에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleTaskEdit = async (taskId, updatedTask) => {
     try {
-      // 모든 수정된 데이터를 포함하여 PUT 요청 전송
-      await api.put(`${baseUrl}/${taskId}`, updatedTask, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      fetchTasks(); // 수정 후 할 일 목록 갱신
+      setIsLoading(true);
+      const url = teamId ? `/teams/${teamId}/tasks/${taskId}` : `/tasks/${taskId}`;
+      await api.put(url, updatedTask);
+
+      if (currentFilters) {
+        await fetchFilteredTasks(currentFilters, page);
+      } else {
+        await fetchTasks(page);
+      }
     } catch (err) {
-      console.error("Error editing task:", err);
+      console.error('Error editing task:', err);
       alert('할 일 수정에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleTaskToggle = async (taskId) => {
     try {
-      await api.put(`${baseUrl}/${taskId}/toggle`, { done: !tasks.find(task => task.id === taskId).done });
-      fetchTasks();
+      setIsLoading(true);
+      const url = teamId ? `/teams/${teamId}/tasks/${taskId}/toggle` : `/tasks/${taskId}/toggle`;
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        await api.put(url, { done: !task.done });
+        if (currentFilters) {
+          await fetchFilteredTasks(currentFilters, page);
+        } else {
+          await fetchTasks(page);
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error toggling task:', err);
       alert('할 일 상태 변경에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const resetFilters = useCallback(async () => {
+    setCurrentFilters(null);
+    setPage(0);
+    await fetchTasks(0);
+  }, [fetchTasks]);
+
+  const toggleDetails = () => {
+    setShowDetails(prev => !prev);
+  };
+
   return {
+    // Data
     tasks,
     content,
+    totalPages,
+    page,
+    currentFilters,
     isLoading,
     deadline,
     time,
     flag,
     showDetails,
-    handleContentChange,
+
+    // Handlers
+    handleContentChange: (e) => setContent(e.target.value),
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
     handleTaskToggle,
+    fetchFilteredTasks: async (filters, currentPage) => {
+      setCurrentFilters(filters);
+      await fetchFilteredTasks(filters, currentPage);
+    },
+    resetFilters,
+    toggleDetails,
+
+    // Setters
+    setPage,
+    setCurrentFilters,
     setDeadline,
     setTime,
     setFlag,
-    toggleDetails,
-    fetchTasks,
+    setShowDetails
   };
 };
 
