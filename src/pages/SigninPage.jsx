@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
+import api from "../services/api.js";
 
 const SigninPage = () => {
   const [formData, setFormData] = useState({
@@ -21,8 +21,8 @@ const SigninPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-          'http://localhost:8080/api/auth/signin',
+      const response = await api.post(
+          '/auth/signin',
           formData
       );
       if (response.status === 200) {

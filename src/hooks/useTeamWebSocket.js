@@ -9,7 +9,7 @@ const useTeamWebSocket = (teamId, onMessage) => {
 
     const token = localStorage.getItem('token');
     wsRef.current = new WebSocket(
-        `ws://localhost:8080/ws/tasks/${teamId}?token=${token}`
+        `${import.meta.env.VITE_WS_BASE_URL}/tasks/${teamId}?token=${token}`
     );
 
     wsRef.current.onopen = () => {
