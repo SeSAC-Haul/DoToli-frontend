@@ -26,4 +26,8 @@ export const rejectInvitation = (teamId, invitationId) => {
   return api.post(`/teams/${teamId}/invitations/${invitationId}/reject`);
 };
 
+export const logout = () => {
+  localStorage.removeItem('token');
+};
+
 export default api;
