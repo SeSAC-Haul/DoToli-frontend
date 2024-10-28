@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from "react-router-dom";
 import { UserPlus } from 'lucide-react';
 import useTaskList from '../hooks/useTaskList';
+import useTeamWebSocket from '../hooks/useTeamWebSocket';
 import TaskListPage from '../components/TaskListPage';
 import Pagination from '../components/Pagination';
 import InviteModal from '../components/InviteModal';
@@ -18,6 +19,7 @@ const TeamTaskListPage = () => {
 
   const {
     tasks,
+    setTasks,
     content,
     totalPages,
     page,
@@ -40,25 +42,29 @@ const TeamTaskListPage = () => {
     currentFilters
   } = useTaskList(`/teams/${teamId}/tasks`, teamId);
 
-  const handleFilterApply = async (filters) => {
-    setIsFiltered(true);
-    setPage(0);
-    await fetchFilteredTasks(filters, 0);
-  };
-
-  const handleResetFilters = async () => {
-    setIsFiltered(false);
-    setPage(0);
-    await resetFilters();
-  };
-
-  const handlePageChange = (newPage) => {
-    const pageIndex = newPage - 1;
-    setPage(pageIndex);
-    if (isFiltered && currentFilters) {
-      fetchFilteredTasks(currentFilters, pageIndex);
+  const handleWebSocketMessage = useCallback((message) => {
+    switch (message.type) {
+      case 'CREATE':
+        setTasks(prev => [...prev, message.task].sort((a, b) => {
+          if (a.done === b.done) return new Date(b.createdAt) - new Date(a.createdAt);
+          return a.done ? 1 : -1;
+        }));
+        break;
+      case 'UPDATE':
+        setTasks(prev => prev.map(task =>
+            task.id === message.task.id ? message.task : task
+        ));
+        break;
+      case 'DELETE':
+        setTasks(prev => prev.filter(task => task.id !== message.taskId));
+        break;
+      default:
+        console.warn('Unknown message type:', message.type);
     }
-  };
+  }, [setTasks]);
+
+  // WebSocket 연결
+  useTeamWebSocket(teamId, handleWebSocketMessage);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -83,6 +89,26 @@ const TeamTaskListPage = () => {
 
     fetchTeamData();
   }, [teamId, navigate]);
+
+  const handleFilterApply = async (filters) => {
+    setIsFiltered(true);
+    setPage(0);
+    await fetchFilteredTasks(filters, 0);
+  };
+
+  const handleResetFilters = async () => {
+    setIsFiltered(false);
+    setPage(0);
+    await resetFilters();
+  };
+
+  const handlePageChange = (newPage) => {
+    const pageIndex = newPage - 1;
+    setPage(pageIndex);
+    if (isFiltered && currentFilters) {
+      fetchFilteredTasks(currentFilters, pageIndex);
+    }
+  };
 
   if (error) {
     return <div className="text-center text-red-600 mt-8">{error}</div>;

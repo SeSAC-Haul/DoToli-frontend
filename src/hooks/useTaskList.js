@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import api from '../services/api.js';
 
 const useTaskList = (baseUrl, teamId = null) => {
@@ -123,6 +123,10 @@ const useTaskList = (baseUrl, teamId = null) => {
     return null;
   };
 
+  const handleContentChange = (e) => {
+    setContent(e.target.value);
+  };
+
   const handleAddTask = async (e) => {
     e.preventDefault();
     if (!content.trim()) return;
@@ -228,6 +232,7 @@ const useTaskList = (baseUrl, teamId = null) => {
   return {
     // Data
     tasks,
+    setTasks,
     content,
     totalPages,
     page,
@@ -239,15 +244,12 @@ const useTaskList = (baseUrl, teamId = null) => {
     showDetails,
 
     // Handlers
-    handleContentChange: (e) => setContent(e.target.value),
+    handleContentChange,
     handleAddTask,
     handleTaskDelete,
     handleTaskEdit,
     handleTaskToggle,
-    fetchFilteredTasks: async (filters, currentPage) => {
-      setCurrentFilters(filters);
-      await fetchFilteredTasks(filters, currentPage);
-    },
+    fetchFilteredTasks,
     resetFilters,
     toggleDetails,
 
