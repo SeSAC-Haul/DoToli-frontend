@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from "react-router-dom";
+import { UserPlus } from 'lucide-react';
 import useTaskList from '../hooks/useTaskList';
+import useTeamWebSocket from '../hooks/useTeamWebSocket';
 import TaskListPage from '../components/TaskListPage';
 import Pagination from '../components/Pagination';
+import InviteModal from '../components/InviteModal';
 import api from '../services/api';
 
 const TeamTaskListPage = () => {
@@ -12,9 +15,11 @@ const TeamTaskListPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFiltered, setIsFiltered] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const {
     tasks,
+    setTasks,
     content,
     totalPages,
     page,
@@ -37,25 +42,29 @@ const TeamTaskListPage = () => {
     currentFilters
   } = useTaskList(`/teams/${teamId}/tasks`, teamId);
 
-  const handleFilterApply = async (filters) => {
-    setIsFiltered(true);
-    setPage(0);
-    await fetchFilteredTasks(filters, 0);
-  };
-
-  const handleResetFilters = async () => {
-    setIsFiltered(false);
-    setPage(0);
-    await resetFilters();
-  };
-
-  const handlePageChange = (newPage) => {
-    const pageIndex = newPage - 1;
-    setPage(pageIndex);
-    if (isFiltered && currentFilters) {
-      fetchFilteredTasks(currentFilters, pageIndex);
+  const handleWebSocketMessage = useCallback((message) => {
+    switch (message.type) {
+      case 'CREATE':
+        setTasks(prev => [...prev, message.task].sort((a, b) => {
+          if (a.done === b.done) return new Date(b.createdAt) - new Date(a.createdAt);
+          return a.done ? 1 : -1;
+        }));
+        break;
+      case 'UPDATE':
+        setTasks(prev => prev.map(task =>
+            task.id === message.task.id ? message.task : task
+        ));
+        break;
+      case 'DELETE':
+        setTasks(prev => prev.filter(task => task.id !== message.taskId));
+        break;
+      default:
+        console.warn('Unknown message type:', message.type);
     }
-  };
+  }, [setTasks]);
+
+  // WebSocket 연결
+  useTeamWebSocket(teamId, handleWebSocketMessage);
 
   useEffect(() => {
     const fetchTeamData = async () => {
@@ -81,12 +90,43 @@ const TeamTaskListPage = () => {
     fetchTeamData();
   }, [teamId, navigate]);
 
+  const handleFilterApply = async (filters) => {
+    setIsFiltered(true);
+    setPage(0);
+    await fetchFilteredTasks(filters, 0);
+  };
+
+  const handleResetFilters = async () => {
+    setIsFiltered(false);
+    setPage(0);
+    await resetFilters();
+  };
+
+  const handlePageChange = (newPage) => {
+    const pageIndex = newPage - 1;
+    setPage(pageIndex);
+    if (isFiltered && currentFilters) {
+      fetchFilteredTasks(currentFilters, pageIndex);
+    }
+  };
+
   if (error) {
     return <div className="text-center text-red-600 mt-8">{error}</div>;
   }
 
   return (
       <div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">{teamName}</h1>
+          <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
+          >
+            <UserPlus className="h-5 w-5"/>
+            팀원 초대
+          </button>
+        </div>
+
         <TaskListPage
             title={`${teamName} 팀 할 일 목록`}
             tasks={tasks}
@@ -101,7 +141,6 @@ const TeamTaskListPage = () => {
             isFiltered={isFiltered}
             isLoading={isLoading}
             teamId={teamId}
-            // 추가된 props
             deadline={deadline}
             time={time}
             flag={flag}
@@ -111,6 +150,7 @@ const TeamTaskListPage = () => {
             showDetails={showDetails}
             toggleDetails={toggleDetails}
         />
+
         {tasks.length > 0 && (
             <Pagination
                 currentPage={page + 1}
@@ -122,6 +162,12 @@ const TeamTaskListPage = () => {
                 onPreviousPage={() => handlePageChange(Math.max(page, 1))}
             />
         )}
+
+        <InviteModal
+            isOpen={isInviteModalOpen}
+            onClose={() => setIsInviteModalOpen(false)}
+            teamId={teamId}
+        />
       </div>
   );
 };

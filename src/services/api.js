@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,6 +24,10 @@ export const acceptInvitation = (teamId, invitationId) => {
 
 export const rejectInvitation = (teamId, invitationId) => {
   return api.post(`/teams/${teamId}/invitations/${invitationId}/reject`);
+};
+
+export const logout = () => {
+  localStorage.removeItem('token');
 };
 
 export default api;

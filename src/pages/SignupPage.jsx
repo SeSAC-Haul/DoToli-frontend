@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
+import api from "../services/api.js";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -24,8 +24,8 @@ const SignupPage = () => {
 
   const handleEmailVerification = async () => {
     try {
-      const response = await axios.get(
-          `http://localhost:8080/api/auth/verify-email?email=${formData.email}`
+      const response = await api.get(
+          `/auth/verify-email?email=${formData.email}`
       );
       if (response.status === 200) {
         alert('이메일 인증 요청이 발송되었습니다.');
@@ -49,8 +49,8 @@ const SignupPage = () => {
     }
 
     try {
-      const response = await axios.post(
-          'http://localhost:8080/api/auth/signup',
+      const response = await api.post(
+          '/auth/signup',
           formData
       );
       if (response.status === 200) {
